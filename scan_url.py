@@ -38,15 +38,14 @@ def scan(URL):
 
             for word in danger_words: 
                 if word in results:    
-                    st.write("it is dangerous")
+                    return st.write("it is dangerous")
                 else:
-                    st.write("it is save ")
+                    return st.write("it is save ")
 
     except Exception as e:
          st.write(e)
 
 if st.button("Click me to start scanning"):
     scan(URL)
-
 
 
