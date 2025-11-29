@@ -11,8 +11,8 @@ client=vt.Client(API)
 def scan(URL):
     try:
 
-        analyses = client.scan_url(URL)
-        st.write(f"scanned {analyses} ")
+        analysis = client.scan_url(URL)
+        st.write(f"scanned {analysis} ")
         while True:
             result = client.get_object(f"/analyses/{analysis.id}")
             if result.status == "completed":
@@ -23,3 +23,4 @@ def scan(URL):
 
 if st.button("Click me to start scanning"):
     scan(URL)
+
