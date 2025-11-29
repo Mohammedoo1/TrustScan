@@ -21,16 +21,21 @@ danger_words = [
 ]
 
 def scan(URL):
+    is_dangerous = False 
+
     try:
 
         analysis = client.scan_url(URL)
-        st.write(f"scanned {analysis} ")
-        while True:
-            result = client.get_object(f"/analyses/{analysis.id}")
-            if result.status == "completed":
-                break
+        
+        with st.spinner("Scanning..."):
 
+            while True:
+                result = client.get_object(f"/analyses/{analysis.id}")
+                if result.status == "completed":
+                    break
 
+       
+            
         st.write("Scan completed!")
         for engine, details in result.results.items():
             results= details['category'].lower()
@@ -38,14 +43,17 @@ def scan(URL):
 
             for word in danger_words: 
                 if word in results:    
-                    return st.write("it is dangerous")
-                else:
-                    return st.write("it is save ")
+                    st.error(f"{engine} said it is dangerous , it is {word}")
+                    is_dangerous= True
+        if not is_dangerous:
 
+             st.success("it is save link")
+                    
     except Exception as e:
          st.write(e)
 
 if st.button("Click me to start scanning"):
     scan(URL)
+
 
 
