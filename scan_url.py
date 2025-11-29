@@ -1,26 +1,34 @@
 import streamlit as st
 import vt
-API ="f201bfdb4e779f527e33ef7c05749409292f1976fcfa59899a3383cb02f00754"
 
-st.title("welcome in  Scan URL ")
+API = "f201bfdb4e779f527e33ef7c05749409292f1976fcfa59899a3383cb02f00754"
 
-URL = st.text_input("enter your URl :")
+st.title("welcome in Scan URL")
 
-client=vt.Client(API)
+URL = st.text_input("enter your URL:")
+
+client = vt.Client(API)
+
 
 def scan(URL):
     try:
-
         analysis = client.scan_url(URL)
-        st.write(f"scanned {analysis} ")
+        st.write(f"Scan submitted. Analysis ID: {analysis.id}")
+
+        st.write("Waiting for scan to complete...")
         while True:
             result = client.get_object(f"/analyses/{analysis.id}")
             if result.status == "completed":
                 break
 
+        st.write("Scan completed!")
+        
+        for engine, details in result.results.items():
+            st.write(f"{engine}: {details['category']}")
+
     except Exception as e:
-         st.write(e)
+        st.write(e)
+
 
 if st.button("Click me to start scanning"):
     scan(URL)
-
