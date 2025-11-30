@@ -2,8 +2,8 @@
 import streamlit as st
 import vt
 import requests as rq
-API_KEY = API_google
-API = API_virus
+API_KEY =st.secrets["API_google"]
+API =st.secrets["API_virus"]
 
 st.title(" Scan URL ")
 
@@ -101,3 +101,4 @@ if st.button("Click me to start scanning"):
     elif choose == "both":
         scan(URL)
         scan_g(URL)
+
