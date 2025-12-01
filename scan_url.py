@@ -21,6 +21,13 @@ danger_words = [
     "spam",
     "dangerous",
 ]
+st.set_page_config(
+    page_title="VirusTotal Safe Browsing",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 def scan_g(URL):
     try:
         data = {
@@ -112,3 +119,4 @@ if st.button("Click me to start scanning"):
             v = scan(URL)
         if g != v:
             st.warning("⚠ Maybe it is risky, don't open it ")
+
