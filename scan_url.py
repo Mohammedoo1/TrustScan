@@ -109,6 +109,9 @@ def scan(URL):
 choose=st.radio("choose where you want to check your link :",["virous total" , "google", "both"])
 
 if st.button("Click me to start scanning"):
+     if not URL:
+        st.warning("❌ Please enter a URL before scanning.")
+        st.stop()
     if choose == "virous total":
         scan(URL)
     elif choose == "google":
@@ -123,6 +126,7 @@ if st.button("Click me to start scanning"):
             v = scan(URL)
         if g != v:
             st.warning("⚠ Maybe it is risky, don't open it ")
+
 
 
 
