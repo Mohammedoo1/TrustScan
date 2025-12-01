@@ -8,10 +8,6 @@ API =st.secrets["API_virus"]
 st.title(" Scan URL ")
 
 URL = st.text_input("enter your URl :")
-if not URL:
-    st.warning("❌ Please enter a URL before scanning.")
-    st.stop()
-
 client = vt.Client(API)
 
 danger_words = [
@@ -97,6 +93,10 @@ def scan(URL):
 choose=st.radio("choose where you want to check your link :",["🛡️ VirusTotal Scan" , "🔍 Google Safe Browsing Scan", "Both (for deep scan)"])
 
 if st.button("Click me to start scanning"):
+    if not URL:
+       st.warning("❌ Please enter a URL before scanning.")
+       st.stop()
+    
     if choose == "🛡️ VirusTotal Scan":
         scan(URL)
     elif choose == "🔍 Google Safe Browsing Scan":
@@ -109,5 +109,6 @@ if st.button("Click me to start scanning"):
         with col2:
             st.subheader("🛡️ VirusTotal Scan")
             scan(URL)
+
 
 
