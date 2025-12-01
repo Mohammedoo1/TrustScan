@@ -25,7 +25,7 @@ danger_words = [
 st.set_page_config(
     page_title="Scan URL",
     page_icon="🛡️",
-    layout="wide",
+    layout="centered",
 )
 
 def scan_g(URL):
@@ -119,4 +119,5 @@ if st.button("Click me to start scanning"):
             v = scan(URL)
         if g != v:
             st.warning("⚠ Maybe it is risky, don't open it ")
+
 
