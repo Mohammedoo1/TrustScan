@@ -2,12 +2,7 @@ import streamlit as st
 import vt
 import requests as rq
 
-st.set_page_config(
-    page_title="Secure Link",
-    page_icon="🛡️",   
-)
-
-tab1, tab2 = st.tabs(["  Scan URL  ", " Unshorten URL "])
+tab1,tab2 = st.tabs(["  Scan URL  ", "  Scan Fill "])
 
 API_KEY = st.secrets["API_google"]
 API = st.secrets["API_virus"]
@@ -131,17 +126,43 @@ with tab1:
                 st.warning("⚠ Maybe it is risky, don't open it ")
 
 with tab2:
-     def showrtn_link():
-         st.title("short URL ")
-         uRL = st.text_input("enter URL:")
+ #     def showrtn_link():
+#         st.title("short URL ")
+ #        uRL = st.text_input("enter URL:")
+#
+ #        try:
+  #           if st.button("show the real link"):
+#
+ #                URl_info=rq.get(uRL)
+  #               st.write(URl_info.url)
+   #      except Exception as e:
+    #         st.write(e)
 
-         try:
-             if st.button("Reveal Real Link"):
+    st.title("Scan your File")
+    max_file=30
+    uploaded_file = st.file_uploader("Choose ypur file :", type=None)
+    if uploaded_file is not None:
+        size= uploaded_file.size / (1024*1024)
+        if size > max_file:
+            st.error("the file size is too big")
+        else:
+            with st.spinner("Scanning..."):
+               with vt.Client(API) as client:
+                  analysis = client.scan_file(uploaded_file, wait_for_completion=True)
 
-                 URl_info=rq.get(uRL)
-                 st.write(URl_info.url)
-         except Exception as e:
-             st.warning("enter short link")
-     showrtn_link()
+        stats = analysis.stats
+        malicious = stats.get("malicious", 0)
+        suspicious = stats.get("suspicious", 0)
+        undetected = stats.get("undetected", 0)
+        harmless = stats.get("harmless", 0)
+
+        if malicious > 0:
+            st.error("⚠ It's a malicious file")
+        elif suspicious > 0:
+            st.warning("⚠ It's a suspicious file")
+        elif undetected > 0 and harmless > 0:
+            st.success("✔ It is save")
+        else:
+            st.info("I am not ensure about the file")
 
 
