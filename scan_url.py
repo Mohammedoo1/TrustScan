@@ -100,10 +100,9 @@ with tab1:
             st.stop()
 
         if choose == "🛡️ VirusTotal Scan":
-            status_v , tables_result = scan(URL)  # استدعاء الدالة مرة واحدة
+            status_v , tables_result = scan(URL)
             if st.button("Click me if you want to see the deatiles"):
-                  table_re=scan(URL)
-                  st.table(table_re)
+                  st.table(tables_result)
 
         elif choose == "🔍 Google Safe Browsing Scan":
             scan_g(URL)
@@ -116,5 +115,5 @@ with tab1:
             with col2:
                 st.subheader("🛡️ VirusTotal Scan")
                 status_v ,_ = scan(URL)
-            if status_g != status_g:
+            if status_g != status_v:
                 st.warning("⚠ Maybe it is risky, don't open it ")
