@@ -78,15 +78,13 @@ with tab1:
                     is_dangerous = True
                 else:
                     tables.append({"engine": engine, "Category": results, "status": "safe"})
-            st.table(tables)
 
             if is_dangerous:
                 st.error("dangerous")
                 return "dangerous"
             else:
                 st.success("safe")
-                return "safe"
-
+                return "safe" , tables
 
         except Exception as e:
             st.write(e)
@@ -103,6 +101,8 @@ with tab1:
 
         if choose == "🛡️ VirusTotal Scan":
             scan(URL)
+            st.table(tables)
+
         elif choose == "🔍 Google Safe Browsing Scan":
             scan_g(URL)
         elif choose == "Both (for deep scan)":
@@ -110,6 +110,7 @@ with tab1:
             with col1:
                 st.subheader("🔍 Google Safe Browsing")
                 g = scan_g(URL)
+                st.table(tables)
             with col2:
                 st.subheader("🛡️ VirusTotal Scan")
                 v = scan(URL)
