@@ -141,6 +141,7 @@ with tab2:
                  URl_info=rq.get(uRL)
                  st.write(URl_info.url)
          except Exception as e:
-             st.write(e)
+             st.warning("enter short link")
      showrtn_link()
+
 
