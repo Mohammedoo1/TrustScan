@@ -106,7 +106,6 @@ with tab1:
             st.session_state.vt_result = scan(URL)
 
         if choose == "🛡️ VirusTotal Scan":
-            if st.session_state.vt_result:
                 status, tables_result = st.session_state.vt_result
                 if st.button("Click me if you want to see the deatiles"):
                     st.table(tables_result)
@@ -125,18 +124,7 @@ with tab1:
             if status_g != status_v:
                 st.warning("⚠ Maybe it is risky, don't open it ")
 
-with tab2:
- #     def showrtn_link():
-#         st.title("short URL ")
- #        uRL = st.text_input("enter URL:")
-#
- #        try:
-  #           if st.button("show the real link"):
-#
- #                URl_info=rq.get(uRL)
-  #               st.write(URl_info.url)
-   #      except Exception as e:
-    #         st.write(e)
+with tab2
 
     st.title("Scan your File")
     max_file=30
@@ -146,9 +134,10 @@ with tab2:
         if size > max_file:
             st.error("the file size is too big")
         else:
-            with st.spinner("Scanning..."):
-               with vt.Client(API) as client:
-                  analysis = client.scan_file(uploaded_file, wait_for_completion=True)
+            if st.button("click me to scan"):
+                with st.spinner("Scanning..."):
+                    with vt.Client(API) as client:
+                        analysis = client.scan_file(uploaded_file, wait_for_completion=True)
 
         stats = analysis.stats
         malicious = stats.get("malicious", 0)
