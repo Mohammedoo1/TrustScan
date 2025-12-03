@@ -59,15 +59,13 @@ with tab1:
         is_dangerous = False
 
         try:
-            analysis = client.scan_url(URL)
+            analysis = client.scan_url(URL, wait_for_completion=True)
 
             with st.spinner("Scanning..."):
                 while True:
                     result = client.get_object(f"/analyses/{analysis.id}")
                     if result.status == "completed":
                         break
-
-            st.write("Scan completed!")
             for engine, details in result.results.items():
                 results = details['category'].lower()
                 is_engine_dangerous = False
@@ -81,20 +79,17 @@ with tab1:
                     is_dangerous = True
                 else:
                     tables.append({"engine": engine, "Category": results, "status": "safe"})
+            st.table(tables)
 
             if is_dangerous:
                 st.error("dangerous")
                 return "dangerous"
             else:
                 st.success("safe")
-                return "safe" , tables
+                return "safe"
 
         except Exception as e:
             st.write(e)
-
-
-    if "vt_result" not in st.session_state:
-        st.session_state.vt_result = None
 
     choose = st.radio(
         "choose where you want to check your link :",
@@ -109,7 +104,7 @@ with tab1:
 
         if choose == "🛡️ VirusTotal Scan":
             scan(URL)
-            
+
         elif choose == "🔍 Google Safe Browsing Scan":
             scan_g(URL)
 
@@ -120,7 +115,7 @@ with tab1:
                 status_g = scan_g(URL)
             with col2:
                 st.subheader("🛡️ VirusTotal Scan")
-                status_v ,_ = scan(URL)
+                status_v = scan(URL)
             if status_g != status_v:
                 st.warning("⚠ Maybe it is risky, don't open it ")
 
@@ -152,7 +147,8 @@ with tab2:
                 else:
                    st.success("🟢 No threats detected by any engine (likely safe)")
         elif size > max_file:
-             st.error("the file size is too big")
+            st.error(f"❌ The file is too big. Maximum allowed size is {max_file} MB")
+
 
 
 
