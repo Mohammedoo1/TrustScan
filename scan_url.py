@@ -2,7 +2,7 @@ import streamlit as st
 import vt
 import requests as rq
 
-tab1,tab2 = st.tabs(["  Scan URL  ", "  Scan Fill "])
+tab1,tab2 = st.tabs(["          Scan URL          ", "          Scan Fill         "])
 
 API_KEY = st.secrets["API_google"]
 API = st.secrets["API_virus"]
@@ -156,6 +156,7 @@ with tab2:
                    st.success("✔ It is save")
                 else:
                    st.success("🟢 No threats detected by any engine (likely safe)")
+
 
 
 
