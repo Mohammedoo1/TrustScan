@@ -105,14 +105,11 @@ with tab1:
         if not URL:
             st.warning("❌ Please enter a URL before scanning.")
             st.stop()
-        else:
-            st.session_state.vt_result = scan(URL)
+
 
         if choose == "🛡️ VirusTotal Scan":
-                status, tables_result = st.session_state.vt_result
-                if st.button("Click me if you want to see the deatiles"):
-                    st.table(tables_result)
-
+            scan(URL)
+            
         elif choose == "🔍 Google Safe Browsing Scan":
             scan_g(URL)
 
@@ -134,9 +131,7 @@ with tab2:
     uploaded_file = st.file_uploader("Choose ypur file :", type=None)
     if uploaded_file is not None:
         size= uploaded_file.size / (1024*1024)
-        if size > max_file:
-            st.error("the file size is too big")
-        else:
+        if size < max_file:
             if st.button("click me to scan"):
                 with st.spinner("Scanning..."):
                     with vt.Client(API) as client:
@@ -156,8 +151,8 @@ with tab2:
                    st.success("✔ It is save")
                 else:
                    st.success("🟢 No threats detected by any engine (likely safe)")
-
-
+        elif size > max_file:
+             st.error("the file size is too big")
 
 
 
