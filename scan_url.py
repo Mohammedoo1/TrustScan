@@ -98,7 +98,7 @@ with tab1:
 
     choose = st.radio(
         "choose where you want to check your link :",
-        ["🛡️ VirusTotal Scan \n\n", "🔍 Google Safe Browsing Scan \n\n", "Both (for deep scan)"]
+        ["🛡️ VirusTotal Scan ", "🔍 Google Safe Browsing Scan ", "Both (for deep scan)"]
     )
 
     if st.button("start scanning"):
@@ -155,6 +155,7 @@ with tab2:
                    st.info("ℹ No engine flagged it. The file is unknown but likely non-malicious ")
         elif size > max_file:
             st.error(f"❌ The file is too big. Maximum allowed size is {max_file} MB")
+
 
 
 
