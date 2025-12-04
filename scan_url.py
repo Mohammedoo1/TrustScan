@@ -90,7 +90,7 @@ with tab1:
 
                 return "safe"
 
-        except APIError:
+        except vt.APIError:
             st.error("Enter real link ❌")
 
     choose = st.radio(
@@ -150,6 +150,7 @@ with tab2:
                    st.info("ℹ No engine flagged it. The file is unknown but likely non-malicious ")
         elif size > max_file:
             st.error(f"❌ The file is too big. Maximum allowed size is {max_file} MB")
+
 
 
 
