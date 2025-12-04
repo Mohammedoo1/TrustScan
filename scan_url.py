@@ -2,14 +2,15 @@ import streamlit as st
 import vt
 import requests as rq
 
-tab1,tab2 = st.tabs(["               Scan URL               ","               Scan Fill              "])
-
-API_KEY = st.secrets["API_google"]
-API = st.secrets["API_virus"]
 st.set_page_config(
     page_title="Secure Link",
     page_icon="🛡️"
 )
+tab1,tab2 = st.tabs(["               Scan URL               ","               Scan Fill              "])
+
+API_KEY = st.secrets["API_google"]
+API = st.secrets["API_virus"]
+
 with tab1:
     st.title(" Scan URL ")
 
@@ -59,13 +60,10 @@ with tab1:
         is_dangerous = False
 
         try:
-            analysis = client.scan_url(URL, wait_for_completion=True)
-
             with st.spinner("Scanning..."):
-                while True:
-                    result = client.get_object(f"/analyses/{analysis.id}")
-                    if result.status == "completed":
-                        break
+                analysis = client.scan_url(URL, wait_for_completion=True)
+                result = client.get_object(f"/analyses/{analysis.id}")
+
             for engine, details in result.results.items():
                 results = details['category'].lower()
                 is_engine_dangerous = False
@@ -148,7 +146,7 @@ with tab2:
                 elif undetected > 0 and harmless > 0:
                    st.success("✔ It is save")
                 else:
-                   st.success("🟢 No threats detected by any engine (likely safe)")
+                   st.info("ℹ No engine flagged it. The file is unknown but likely non-malicious ")
         elif size > max_file:
             st.error(f"❌ The file is too big. Maximum allowed size is {max_file} MB")
 
