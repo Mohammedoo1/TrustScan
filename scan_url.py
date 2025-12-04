@@ -3,7 +3,7 @@ import vt
 import requests as rq
 
 st.set_page_config(
-    page_title="Secure Link",
+    page_title="TrustScan",
     page_icon="🛡️"
 )
 tab1,tab2 = st.tabs(["               Scan URL               ","               Scan Fill              "])
@@ -149,6 +149,7 @@ with tab2:
                    st.info("ℹ No engine flagged it. The file is unknown but likely non-malicious ")
         elif size > max_file:
             st.error(f"❌ The file is too big. Maximum allowed size is {max_file} MB")
+
 
 
 
