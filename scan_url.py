@@ -1,6 +1,7 @@
 import streamlit as st
 import vt
 import requests as rq
+from vt.exceptions import APIError
 
 st.set_page_config(
     page_title="Secure Link",
@@ -89,8 +90,8 @@ with tab1:
 
                 return "safe"
 
-        except Exception as e:
-            st.write(e)
+        except APIError:
+            st.error("Enter real link ❌")
 
     choose = st.radio(
         "choose where you want to check your link :",
