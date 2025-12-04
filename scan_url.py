@@ -11,14 +11,14 @@ tab1,tab2 = st.tabs(["               Scan URL               ","               Sc
 
 API_KEY = st.secrets["API_google"]
 API = st.secrets["API_virus"]
-URL = st.text_input("enter your URl :")
-if not URL.startswith("https://") or not URL.startswith("http://"):
-    st.error("Enter a valid URL")
-    st.stop()
+
 
 with tab1:
     st.title(" Scan URL ")
-
+    URL = st.text_input("enter your URl :")
+    if not URL.startswith("https://") or not URL.startswith("http://"):
+        st.error("Enter a valid URL")
+        st.stop()
     danger_words = [
         "malicious",
         "phishing",
