@@ -1,4 +1,4 @@
 vt-py
 requests
 streamlit
-vt.exceptions
+
