@@ -47,10 +47,10 @@ with tab1:
             result = response.json()
 
             if "matches" in result:
-                st.error("⚠ Google Safe Browsing: Dangerous")
+                st.error("⚠ Dangerous")
                 return "dangerous"
             else:
-                st.success("✔ Google Safe Browsing: Safe")
+                st.success("✔ Safe")
                 return "safe"
 
         except Exception as e:
@@ -82,14 +82,12 @@ with tab1:
                     tables.append({"engine": engine, "Category": results, "status": "safe"})
 
             if is_dangerous:
-                st.error("dangerous")
+                st.error("⚠ Dangerous")
                 st.table(tables)
-
                 return "dangerous"
             else:
-                st.success("safe")
+                st.success("✔ Safe")
                 st.table(tables)
-
                 return "safe"
 
         except Exception as e:
@@ -154,6 +152,7 @@ with tab2:
                     st.info("ℹ No engine flagged it. The file is unknown but likely non-malicious ")
         elif size > max_file:
             st.error(f"❌ The file is too big. Maximum allowed size is {max_file} MB")
+
 
 
 
