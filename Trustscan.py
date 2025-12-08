@@ -127,7 +127,7 @@ with tab1:
 with tab2:
     st.title("Scan your File")
     max_file = 30
-    uploaded_file = st.file_uploader("Choose ypur file :", type=None)
+    uploaded_file = st.file_uploader("Choose your file :", type=None)
     if uploaded_file is not None:
         size = uploaded_file.size / (1024 * 1024)
         if size < max_file:
@@ -152,6 +152,7 @@ with tab2:
                     st.info("ℹ No engine flagged it. The file is unknown but likely non-malicious ")
         elif size > max_file:
             st.error(f"❌ The file is too big. Maximum allowed size is {max_file} MB")
+
 
 
 
