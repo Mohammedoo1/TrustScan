@@ -2,155 +2,170 @@ import streamlit as st
 import vt
 import requests as rq
 
+# ------------------ إعداد الصفحة ------------------
 st.set_page_config(
     page_title="TrustScan",
     page_icon="🛡️"
 )
 
-tab1, tab2 = st.tabs(["               Scan URL               ", "               Scan Fill              "])
+tab1, tab2 = st.tabs(
+    ["       🔗 Scan URL       ", "       📁 Scan File       "]
+)
 
 API_KEY_google = st.secrets["API_google"]
 API_KEY_virustotal = st.secrets["API_virus_total"]
 
-with tab1:
-    st.title(" Scan URL ")
-    URL = st.text_input("enter your URl :")
-
-    danger_words = [
-        "malicious",
-        "phishing",
-        "malware",
-        "trojan",
-        "harmful",
-        "suspicious",
-        "spam",
-        "dangerous",
-    ]
-
-
-    def scan_g(URL):
-        try:
-            data = {
-                "threatInfo": {
-                    "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING"],
-                    "platformTypes": ["ANY_PLATFORM"],
-                    "threatEntryTypes": ["URL"],
-                    "threatEntries": [{"url": URL}]
-                }
+# ------------------ دالة Google Safe Browsing ------------------
+def scan_google(URL):
+    try:
+        data = {
+            "threatInfo": {
+                "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING"],
+                "platformTypes": ["ANY_PLATFORM"],
+                "threatEntryTypes": ["URL"],
+                "threatEntries": [{"url": URL}]
             }
-            with st.spinner("Scanning..."):
-                response = rq.post(
-                    f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={API_KEY_google}",
-                    json=data
-                )
+        }
 
-            result = response.json()
+        with st.spinner("🔍 Google Safe Browsing scanning..."):
+            response = rq.post(
+                f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={API_KEY_google}",
+                json=data
+            )
 
-            if "matches" in result:
-                st.error("⚠ Dangerous")
-                return "dangerous"
-            else:
-                st.success("✔ Safe")
-                return "safe"
+        result = response.json()
 
-        except Exception as e:
-            st.write(e)
+        if "matches" in result:
+            st.error("⚠ Dangerous (Google Safe Browsing)")
+            return "dangerous"
+        else:
+            st.success("✔ Safe (Google Safe Browsing)")
+            return "safe"
+
+    except Exception as e:
+        st.error(e)
 
 
-    def scan(URL):
-        client = vt.Client(API_KEY_virustotal)
-        tables = []
-        is_dangerous = False
+# ------------------ دالة VirusTotal URL ------------------
+def scan_virustotal_url(URL):
+    tables = []
+    is_dangerous = False
 
-        try:
-            with st.spinner("Scanning..."):
+    try:
+        with vt.Client(API_KEY_virustotal) as client:
+            with st.spinner("🛡️ VirusTotal scanning..."):
                 analysis = client.scan_url(URL, wait_for_completion=True)
-                result = client.get_object(f"/analyses/{analysis.id}")
 
-            for engine, details in result.attributes["results"].items():
-                results = details['category'].lower()
-                is_engine_dangerous = False
-                for word in danger_words:
-                    if word in results:
-                        is_engine_dangerous = True
-                        break
+        for engine, details in analysis.results.items():
+            category = details["category"].lower()
 
-                if is_engine_dangerous:
-                    tables.append({"engine": engine, "Category": results, "status": "dangerous"})
-                    is_dangerous = True
-                else:
-                    tables.append({"engine": engine, "Category": results, "status": "safe"})
-
-            if is_dangerous:
-                st.error("⚠ Dangerous")
-                st.table(tables)
-                return "dangerous"
+            if category in ["malicious", "suspicious"]:
+                tables.append({
+                    "Engine": engine,
+                    "Category": category,
+                    "Status": "dangerous"
+                })
+                is_dangerous = True
             else:
-                st.success("✔ Safe")
-                st.table(tables)
-                return "safe"
+                tables.append({
+                    "Engine": engine,
+                    "Category": category,
+                    "Status": "safe"
+                })
 
-        except Exception as e:
-            st.write(e)
+        st.table(tables)
 
+        if is_dangerous:
+            st.error("⚠ Dangerous (VirusTotal)")
+            return "dangerous"
+        else:
+            st.success("✔ Safe (VirusTotal)")
+            return "safe"
+
+    except Exception as e:
+        st.error(e)
+
+
+# ================== TAB 1 : Scan URL ==================
+with tab1:
+    st.title("🔗 Scan URL")
+    URL = st.text_input("Enter URL (with http/https):")
 
     choose = st.radio(
-        "choose where you want to check your link :",
-        ["🛡️ VirusTotal Scan", "🔍 Google Safe Browsing Scan", "Both (for deep scan)"]
+        "Choose scan method:",
+        [
+            "🛡️ VirusTotal",
+            "🔍 Google Safe Browsing",
+            "🔎 Both (Deep Scan)"
+        ]
     )
 
-    if st.button("start scanning"):
+    if st.button("🚀 Start Scanning"):
         if not URL:
-            st.warning("❌ Please enter a URL before scanning.")
-            st.stop()
-        elif URL and not (URL.startswith("https://") or URL.startswith("http://")):
-            st.error("Enter a valid URL")
+            st.warning("❌ Please enter a URL")
             st.stop()
 
-        if choose == "🛡️ VirusTotal Scan":
-            scan(URL)
+        if not URL.startswith(("http://", "https://")):
+            st.error("❌ Invalid URL format")
+            st.stop()
 
-        elif choose == "🔍 Google Safe Browsing Scan":
-            scan_g(URL)
+        if choose == "🛡️ VirusTotal":
+            scan_virustotal_url(URL)
 
-        elif choose == "Both (for deep scan)":
+        elif choose == "🔍 Google Safe Browsing":
+            scan_google(URL)
+
+        elif choose == "🔎 Both (Deep Scan)":
             col1, col2 = st.columns(2)
+
             with col1:
                 st.subheader("🔍 Google Safe Browsing")
-                status_g = scan_g(URL)
+                status_g = scan_google(URL)
+
             with col2:
-                st.subheader("🛡️ VirusTotal Scan")
-                status_v = scan(URL)
+                st.subheader("🛡️ VirusTotal")
+                status_v = scan_virustotal_url(URL)
+
             if status_g != status_v:
-                st.warning("⚠ Maybe it is risky, don't open it ")
+                st.warning("⚠ The link may be risky. Be careful!")
 
+# ================== TAB 2 : Scan File ==================
 with tab2:
-    st.title("Scan your File")
-    max_file = 30
-    uploaded_file = st.file_uploader("Choose your file :", type=None)
-    if uploaded_file is not None:
-        size = uploaded_file.size / (1024 * 1024)
-        if size < max_file:
-            if st.button("click me to scan"):
-                with st.spinner("Scanning..."):
+    st.title("📁 Scan File (VirusTotal)")
+    MAX_FILE_MB = 30
+
+    uploaded_file = st.file_uploader("Upload your file:")
+
+    if uploaded_file:
+        size_mb = uploaded_file.size / (1024 * 1024)
+
+        if size_mb > MAX_FILE_MB:
+            st.error(f"❌ File too large (Max {MAX_FILE_MB} MB)")
+        else:
+            if st.button("🛡️ Scan File"):
+                try:
                     with vt.Client(API_KEY_virustotal) as client:
-                        analysis = client.scan_file(uploaded_file, wait_for_completion=True)
+                        with st.spinner("Scanning file..."):
+                            analysis = client.scan_file(
+                                uploaded_file,
+                                wait_for_completion=True
+                            )
 
-                stats = analysis.stats
-                malicious = stats.get("malicious", 0)
-                suspicious = stats.get("suspicious", 0)
-                undetected = stats.get("undetected", 0)
-                harmless = stats.get("harmless", 0)
+                    stats = analysis.stats
 
-                if malicious > 0:
-                    st.error("⚠ It's a malicious file")
-                elif suspicious > 0:
-                    st.warning("⚠ It's a suspicious file")
-                elif undetected > 0 and harmless > 0:
-                    st.success("✔ It is save")
-                else:
-                    st.info("ℹ No engine flagged it. The file is unknown but likely non-malicious ")
-        elif size > max_file:
-            st.error(f"❌ The file is too big. Maximum allowed size is {max_file} MB")
+                    malicious = stats.get("malicious", 0)
+                    suspicious = stats.get("suspicious", 0)
+                    harmless = stats.get("harmless", 0)
+                    undetected = stats.get("undetected", 0)
 
+                    if malicious > 0:
+                        st.error("⚠ Malicious file")
+                    elif suspicious > 0:
+                        st.warning("⚠ Suspicious file")
+                    elif harmless > 0:
+                        st.success("✔ Safe file")
+                    else:
+                        st.info("ℹ Unknown file (no engine flagged it)")
 
+                except Exception as e:
+                    st.error(e)
