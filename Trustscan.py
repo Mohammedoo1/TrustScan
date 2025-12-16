@@ -5,7 +5,7 @@ from fpdf import FPDF
 from datetime import datetime
 
 st.set_page_config(
-    page_title="TrustScan",
+    page_title="Trust Scan",
     page_icon="🛡️"
 )
 
@@ -19,7 +19,6 @@ danger_words = [
     "harmful", "suspicious", "spam", "dangerous"
 ]
 
-# ---------------- PDF function ----------------
 def create_pdf(url, status, tables=None):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     file_name = f"scan_report_{timestamp}.pdf"
@@ -43,7 +42,6 @@ def create_pdf(url, status, tables=None):
     pdf.output(file_name)
     return file_name
 
-# ---------------- Scan Functions ----------------
 def scan_g(URL):
     try:
         data = {
@@ -94,7 +92,8 @@ def scan_vt(URL):
         else:
             st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
 
-        st.table(tables)
+        if tables:
+            st.table(tables)
         status_text = "Dangerous" if is_dangerous else "Safe"
         return status_text, tables
 
@@ -194,3 +193,4 @@ with tab2:
                         file_name=file_name,
                         mime="application/pdf"
                     )
+
