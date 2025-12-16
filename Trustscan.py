@@ -56,45 +56,56 @@ with tab1:
         except Exception as e:
             st.write(e)
 
+def scan(URL):
+    client = vt.Client(API_KEY_virustotal)
+    tables = []
+    is_dangerous = False
 
-    def scan(URL):
-        client = vt.Client(API_KEY_virustotal)
-        tables = []
-        is_dangerous = False
+    try:
+        with st.spinner("Scanning..."):
+            analysis = client.scan_url(URL, wait_for_completion=True)
+            result = client.get_object(f"/analyses/{analysis.id}")
 
-        try:
-            with st.spinner("Scanning..."):
-                analysis = client.scan_url(URL, wait_for_completion=True)
-                result = client.get_object(f"/analyses/{analysis.id}")
-
-            for engine, details in result.results.items():
-                results = details['category'].lower()
-                is_engine_dangerous = False
-                for word in danger_words:
-                    if word in results:
-                        is_engine_dangerous = True
-                        break
-
-                if is_engine_dangerous:
-                    tables.append({"engine": engine, "Category": results, "status": "dangerous"})
-                    is_dangerous = True
-                else:
-                    tables.append({"engine": engine, "Category": results, "status": "safe"})
-
-            if is_dangerous:
+        # إذا كانت نتائج المحركات فارغة، نعتمد على stats
+        if not getattr(result, "results", {}):
+            stats = getattr(analysis, "stats", {})
+            malicious = stats.get("malicious", 0)
+            suspicious = stats.get("suspicious", 0)
+            harmless = stats.get("harmless", 0)
+            
+            status = "safe" if malicious == 0 and suspicious == 0 else "dangerous"
+            tables.append({
+                "engine": "VirusTotal summary",
+                "Category": f"Malicious: {malicious}, Suspicious: {suspicious}, Harmless: {harmless}",
+                "status": status
+            })
+            
+            if status == "dangerous":
                 st.error("⚠ Dangerous")
-                st.table(tables)
-                return "dangerous"
             else:
                 st.success("✔ Safe")
-                st.write(analysis.stats)
+            st.table(tables)
+            return status
 
-                st.table(tables)
-                return "safe"
+        for engine, details in result.results.items():
+            results = details['category'].lower()
+            is_engine_dangerous = any(word in results for word in danger_words)
 
-        except Exception as e:
-            st.write(e)
+            if is_engine_dangerous:
+                tables.append({"engine": engine, "Category": results, "status": "dangerous"})
+                is_dangerous = True
+            else:
+                tables.append({"engine": engine, "Category": results, "status": "safe"})
 
+        if is_dangerous:
+            st.error("⚠ Dangerous")
+        else:
+            st.success("✔ Safe")
+        st.table(tables)
+        return "dangerous" if is_dangerous else "safe"
+
+    except Exception as e:
+        st.write(e)
 
     choose = st.radio(
         "choose where you want to check your link :",
@@ -154,6 +165,7 @@ with tab2:
                     st.info("ℹ No engine flagged it. The file is unknown but likely non-malicious ")
         elif size > max_file:
             st.error(f"❌ The file is too big. Maximum allowed size is {max_file} MB")
+
 
 
 
