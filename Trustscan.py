@@ -98,11 +98,11 @@ def scan_vt(URL):
         if is_dangerous:
             st.table(tables)
 
-            st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
+         #   st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
             st.table(tables)
 
         else:
-            st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
+       #     st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
             st.table(tables)
 
 
@@ -198,6 +198,7 @@ with tab2:
                         file_name=file_name,
                         mime="application/pdf"
                     )
+
 
 
 
