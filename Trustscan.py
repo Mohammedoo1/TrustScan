@@ -79,13 +79,21 @@ def scan_vt(URL):
             analysis = client.scan_url(URL, wait_for_completion=True)
             result = client.get_object(f"/analyses/{analysis.id}")
 
-        for engine, details in result.results.items():
-            results = details['category'].lower()
-            is_engine_dangerous = any(word in results for word in danger_words)
-            status = "dangerous" if is_engine_dangerous else "safe"
-            if is_engine_dangerous:
-                is_dangerous = True
-            tables.append({"engine": engine, "Category": results, "status": status})
+      
+            for engine, details in result.results.items():
+                results = details['category'].lower()
+                is_engine_dangerous = False
+                for word in danger_words:
+                    if word in results:
+                        is_engine_dangerous = True
+                        break
+
+                if is_engine_dangerous:
+                    tables.append({"engine": engine, "Category": results, "status": "dangerous"})
+                    is_dangerous = True
+                else:
+                    tables.append({"engine": engine, "Category": results, "status": "safe"})
+
 
         if is_dangerous:
             st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
@@ -191,6 +199,7 @@ with tab2:
                         file_name=file_name,
                         mime="application/pdf"
                     )
+
 
 
 
