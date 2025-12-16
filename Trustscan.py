@@ -111,9 +111,13 @@ with tab1:
 
         if choose == "🛡️ VirusTotal":
             scan_virustotal_url(URL)
+            scan_virustotal_url(URL)
+
 
         elif choose == "🔍 Google Safe Browsing":
             scan_google(URL)
+            scan_google(URL)
+
 
         elif choose == "🔎 Both (Deep Scan)":
             col1, col2 = st.columns(2)
@@ -169,3 +173,4 @@ with tab2:
 
                 except Exception as e:
                     st.error(e)
+
