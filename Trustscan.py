@@ -89,7 +89,10 @@ def scan_vt(URL):
 
         if is_dangerous:
             st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
-            st.table(tables)
+            if result.results:
+                st.table(tables)
+            else:
+                st.info("No VirusTotal engines reported results yet.")
 
         else:
             st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
@@ -188,6 +191,7 @@ with tab2:
                         file_name=file_name,
                         mime="application/pdf"
                     )
+
 
 
 
