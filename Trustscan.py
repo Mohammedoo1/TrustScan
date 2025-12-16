@@ -4,7 +4,11 @@ import requests as rq
 from fpdf import FPDF
 from datetime import datetime
 
-st.set_page_config(page_title="Trust Scan", page_icon="🛡️")
+# ----------------------------- إعداد الصفحة -----------------------------
+st.set_page_config(
+    page_title="Trust Scan",
+    page_icon="🛡️"
+)
 
 tab1, tab2 = st.tabs(["Scan URL", "Scan File"])
 
@@ -13,10 +17,11 @@ API_KEY_virustotal = st.secrets["API_virus_total"]
 
 danger_words = [
     "malicious", "phishing", "malware", "trojan",
-    "harmful", "suspicious", "spam", "dangerous",
+    "harmful", "suspicious", "spam", "dangerous"
 ]
 
-def create_pdf(title, status, tables=None):
+# ----------------------------- دالة إنشاء PDF -----------------------------
+def create_pdf(url, status, tables=None):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     file_name = f"scan_report_{timestamp}.pdf"
 
@@ -25,7 +30,8 @@ def create_pdf(title, status, tables=None):
     pdf.set_font("Arial", size=12)
     pdf.cell(0, 10, txt="TrustScan Report", ln=True, align="C")
     pdf.ln(5)
-    pdf.cell(0, 10, txt=f"Title: {title}", ln=True)
+
+    pdf.cell(0, 10, txt=f"URL: {url}", ln=True)
     pdf.cell(0, 10, txt=f"Status: {status}", ln=True)
     pdf.ln(5)
 
@@ -38,7 +44,7 @@ def create_pdf(title, status, tables=None):
     pdf.output(file_name)
     return file_name
 
-# --- Scan Google ---
+# ----------------------------- فحص Google Safe Browsing -----------------------------
 def scan_g(URL):
     try:
         data = {
@@ -56,39 +62,45 @@ def scan_g(URL):
             )
         result = response.json()
         if "matches" in result:
-            st.error("⚠ Dangerous")
+            st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
             return "Dangerous"
         else:
-            st.success("✔ Safe")
+            st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
             return "Safe"
     except Exception as e:
         st.write(e)
 
-# --- Scan VirusTotal ---
+# ----------------------------- فحص VirusTotal -----------------------------
 def scan_vt(URL):
     client = vt.Client(API_KEY_virustotal)
     tables = []
     is_dangerous = False
-
     try:
         with st.spinner("Scanning VirusTotal..."):
             analysis = client.scan_url(URL, wait_for_completion=True)
             result = client.get_object(f"/analyses/{analysis.id}")
 
         for engine, details in result.results.items():
-            category = details['category'].lower()
-            status = "dangerous" if category in ['malicious', 'suspicious'] else "safe"
-            if status == "dangerous":
+            results = details['category'].lower()
+            is_engine_dangerous = any(word in results for word in danger_words)
+            status = "dangerous" if is_engine_dangerous else "safe"
+            if is_engine_dangerous:
                 is_dangerous = True
-            tables.append({"engine": engine, "Category": category, "status": status})
+            tables.append({"engine": engine, "Category": results, "status": status})
+
+        if is_dangerous:
+            st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
+        else:
+            st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
 
         st.table(tables)
-        return ("Dangerous" if is_dangerous else "Safe"), tables
+        status_text = "Dangerous" if is_dangerous else "Safe"
+        return status_text, tables
 
     except Exception as e:
         st.write(e)
 
-# ---------------------- Tab1 ----------------------
+# ----------------------------- واجهة فحص URL -----------------------------
 with tab1:
     st.title("Scan URL")
     URL = st.text_input("Enter your URL:")
@@ -111,11 +123,11 @@ with tab1:
 
         if choose == "🛡️ VirusTotal Scan":
             status_v, tables = scan_vt(URL)
-            status_text = status_v
+            file_name = create_pdf(URL, status_v, tables=tables)
 
         elif choose == "🔍 Google Safe Browsing Scan":
             status_g = scan_g(URL)
-            status_text = status_g
+            file_name = create_pdf(URL, status_g)
 
         elif choose == "Both (Deep Scan)":
             col1, col2 = st.columns(2)
@@ -125,10 +137,11 @@ with tab1:
             with col2:
                 st.subheader("🛡️ VirusTotal Scan")
                 status_v, tables = scan_vt(URL)
-            status_text = f"Google: {status_g}, VirusTotal: {status_v}"
 
-        # زر التحميل بعد الفحص
-        file_name = create_pdf(URL, status_text, tables)
+            status_text = f"Google: {status_g}, VirusTotal: {status_v}"
+            file_name = create_pdf(URL, status_text, tables=tables)
+
+        # زر تحميل PDF
         with open(file_name, "rb") as f:
             st.download_button(
                 label="Download PDF Report",
@@ -137,11 +150,12 @@ with tab1:
                 mime="application/pdf"
             )
 
-# ---------------------- Tab2 ----------------------
+# ----------------------------- واجهة فحص الملفات -----------------------------
 with tab2:
     st.title("Scan Your File")
     max_file = 30
     uploaded_file = st.file_uploader("Choose your file:", type=None)
+
     if uploaded_file:
         size = uploaded_file.size / (1024 * 1024)
         if size > max_file:
@@ -170,7 +184,6 @@ with tab2:
                     st.info("ℹ File unknown, likely safe")
                     status_file = "Unknown"
 
-                # زر التحميل بعد فحص الملف
                 file_name = create_pdf(uploaded_file.name, status_file)
                 with open(file_name, "rb") as f:
                     st.download_button(
