@@ -92,15 +92,12 @@ def scan_vt(URL):
         else:
             st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
 
-        if tables:
-            st.table(tables)
         status_text = "Dangerous" if is_dangerous else "Safe"
         return status_text, tables
 
     except Exception as e:
         st.write(e)
 
-# ---------------- Tab 1: Scan URL ----------------
 with tab1:
     st.title("Scan URL")
     URL = st.text_input("Enter your URL:")
@@ -124,6 +121,8 @@ with tab1:
         if choose == "🛡️ VirusTotal Scan":
             status_v, tables = scan_vt(URL)
             file_name = create_pdf(URL, status_v, tables=tables)
+            if tables:
+               st.table(tables)
 
         elif choose == "🔍 Google Safe Browsing Scan":
             status_g = scan_g(URL)
@@ -137,12 +136,12 @@ with tab1:
             with col2:
                 st.subheader("🛡️ VirusTotal Scan")
                 status_v, tables = scan_vt(URL)
+                if tables:
+                   st.table(tables)
 
-            # دمج النصوص
             status_text = f"Google: {status_g}, VirusTotal: {status_v}"
             file_name = create_pdf(URL, status_text, tables=tables)
 
-        # زر التحميل
         with open(file_name, "rb") as f:
             st.download_button(
                 label="Download PDF Report",
@@ -150,8 +149,6 @@ with tab1:
                 file_name=file_name,
                 mime="application/pdf"
             )
-
-# ---------------- Tab 2: Scan File ----------------
 with tab2:
     st.title("Scan Your File")
     max_file = 30
@@ -184,7 +181,6 @@ with tab2:
                     st.info("ℹ File unknown, likely safe")
                     status_file = "Unknown"
 
-                # إنشاء PDF للملف
                 file_name = create_pdf(uploaded_file.name, status_file)
                 with open(file_name, "rb") as f:
                     st.download_button(
@@ -193,4 +189,5 @@ with tab2:
                         file_name=file_name,
                         mime="application/pdf"
                     )
+
 
