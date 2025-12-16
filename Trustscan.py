@@ -89,8 +89,12 @@ def scan_vt(URL):
 
         if is_dangerous:
             st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
+            st.table(tables)
+
         else:
             st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
+            st.table(tables)
+
 
         status_text = "Dangerous" if is_dangerous else "Safe"
         return status_text, tables
@@ -121,9 +125,7 @@ with tab1:
         if choose == "🛡️ VirusTotal Scan":
             status_v, tables = scan_vt(URL)
             file_name = create_pdf(URL, status_v, tables=tables)
-            if tables:
-               st.table(tables)
-
+            
         elif choose == "🔍 Google Safe Browsing Scan":
             status_g = scan_g(URL)
             file_name = create_pdf(URL, status_g)
@@ -136,9 +138,7 @@ with tab1:
             with col2:
                 st.subheader("🛡️ VirusTotal Scan")
                 status_v, tables = scan_vt(URL)
-                if tables:
-                   st.table(tables)
-
+                
             status_text = f"Google: {status_g}, VirusTotal: {status_v}"
             file_name = create_pdf(URL, status_text, tables=tables)
 
@@ -189,5 +189,6 @@ with tab2:
                         file_name=file_name,
                         mime="application/pdf"
                     )
+
 
 
