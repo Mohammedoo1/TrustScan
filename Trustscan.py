@@ -79,35 +79,22 @@ def scan_vt(URL):
             analysis = client.scan_url(URL, wait_for_completion=True)
             result = client.get_object(f"/analyses/{analysis.id}")
 
-      
-            for engine, details in result.results.items():
-                results = details['category'].lower()
-                is_engine_dangerous = False
-                for word in danger_words:
-                    if word in results:
-                        is_engine_dangerous = True
-                        break
-
-                if is_engine_dangerous:
-                    tables.append({"engine": engine, "Category": results, "status": "dangerous"})
+        for engine, details in result.results.items():
+            results = details.get('category', 'undetected').lower()
+            status = "safe"
+            for word in danger_words:
+                if word in results:
+                    status = "dangerous"
                     is_dangerous = True
-                else:
-                    tables.append({"engine": engine, "Category": results, "status": "safe"})
+                    break
+            tables.append({"engine": engine, "Category": results, "status": status})
 
+        # إذا الجدول فارغ، أضف صف افتراضي
+        if not tables:
+            tables.append({"engine": "No threats detected", "Category": "-", "status": "safe"})
 
-        if is_dangerous:
-            st.table(tables)
-
-         #   st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
-            st.table(tables)
-
-        else:
-       #     st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
-            st.table(tables)
-
-
-        status_text = "Dangerous" if is_dangerous else "Safe"
-        return status_text, tables
+        st.table(tables)
+        return ("Dangerous" if is_dangerous else "Safe"), tables
 
     except Exception as e:
         st.write(e)
@@ -198,6 +185,7 @@ with tab2:
                         file_name=file_name,
                         mime="application/pdf"
                     )
+
 
 
 
