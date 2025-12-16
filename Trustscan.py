@@ -3,6 +3,7 @@ import vt
 import requests as rq
 from fpdf import FPDF
 from datetime import datetime
+import time
 
 # ----------------------------- إعداد الصفحة -----------------------------
 st.set_page_config(
@@ -45,95 +46,115 @@ def create_pdf(url, status, tables=None):
     return file_name
 
 # ----------------------------- فحص Google Safe Browsing -----------------------------
-def scan_vt(URL):
-    client = vt.Client(API_KEY_virustotal)
+def scan_g(URL):
+    try:
+        data = {
+            "threatInfo": {
+                "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING"],
+                "platformTypes": ["ANY_PLATFORM"],
+                "threatEntryTypes": ["URL"],
+                "threatEntries": [{"url": URL}]
+            }
+        }
+        with st.spinner("Scanning Google Safe Browsing..."):
+            response = rq.post(
+                f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={API_KEY_google}",
+                json=data,
+                timeout=30
+            )
+        result = response.json()
+        if "matches" in result:
+            st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
+            return "Dangerous"
+        else:
+            st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
+            return "Safe"
+    except Exception as e:
+        st.error(f"Google Safe Browsing error: {e}")
+        return "Error"
+
+# ----------------------------- فحص VirusTotal (محسّن ومتحمّل للأخطاء) -----------------------------
+def scan_vt(URL, timeout_seconds=60, poll_interval=2):
     tables = []
     is_dangerous = False
 
     try:
-        with st.spinner("Scanning VirusTotal..."):
-            analysis = client.scan_url(URL, wait_for_completion=True)
+        with vt.Client(API_KEY_virustotal) as client:
+            with st.spinner("Submitting URL to VirusTotal and waiting for results..."):
+                analysis = client.scan_url(URL, wait_for_completion=True)
 
-            # ننتظر اكتمال التحليل
+            # Polling على حالة التحليل حتى الاكتمال أو انتهاء المهلة
+            start = time.time()
+            result = None
             while True:
-                result = client.get_object(f"/analyses/{analysis.id}")
-                if result.status == "completed":
+                try:
+                    result = client.get_object(f"/analyses/{analysis.id}")
+                except Exception as e:
+                    # لا نوقف التنفيذ فورًا؛ نسمح بإعادة المحاولة حتى انتهاء المهلة
+                    st.write(f"Warning while fetching analysis status: {e}")
+                    result = None
+
+                if result is not None and getattr(result, "status", None) == "completed":
                     break
 
-        # الآن نستخدم نتيجة التحليل نفسها
-        vt_results = result.results
-
-        for engine, details in vt_results.items():
-            category = details['category'].lower()
-            is_engine_dangerous = any(word in category for word in danger_words)
-            status = "dangerous" if is_engine_dangerous else "safe"
-
-            if is_engine_dangerous:
-                is_dangerous = True
-
-            tables.append({
-                "engine": engine,
-                "Category": category,
-                "status": status
-            })
-
-        # عرض النتيجة
-        if is_dangerous:
-            st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
-        else:
-            st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
-
-        st.table(tables)
-        return ("Dangerous" if is_dangerous else "Safe"), tables
-
-    except Exception as e:
-        st.write(e)
-# ----------------------------- فحص VirusTotal (الإصدار المحسّن) -----------------------------
-def scan_vt(URL):
-    client = vt.Client(API_KEY_virustotal)
-    tables = []
-    is_dangerous = False
-
-    try:
-        with st.spinner("Scanning VirusTotal..."):
-            analysis = client.scan_url(URL, wait_for_completion=True)
-
-            # ننتظر اكتمال التحليل
-            while True:
-                result = client.get_object(f"/analyses/{analysis.id}")
-                if result.status == "completed":
+                if time.time() - start > timeout_seconds:
+                    st.warning("Timeout waiting for VirusTotal analysis to complete. Using best available data.")
                     break
 
-            # جلب التقرير النهائي
-            url_id = vt.url_id(URL)
-            final_report = client.get_object(f"/urls/{url_id}")
+                time.sleep(poll_interval)
 
-        # استخراج النتائج
-        for engine, details in final_report.last_analysis_results.items():
-            category = details['category'].lower()
-            is_engine_dangerous = any(word in category for word in danger_words)
-            status = "dangerous" if is_engine_dangerous else "safe"
+            # حاول استخدام نتائج التحليل أولاً
+            vt_results = {}
+            if result is not None and hasattr(result, "results"):
+                vt_results = result.results or {}
 
-            if is_engine_dangerous:
-                is_dangerous = True
+            # إذا كانت النتائج فارغة، حاول جلب /urls/{url_id} كخيار ثانوي
+            if not vt_results:
+                try:
+                    url_id = vt.url_id(URL)
+                    final_report = client.get_object(f"/urls/{url_id}")
+                    # بعض إصدارات المكتبة قد تستخدم last_analysis_results
+                    vt_results = getattr(final_report, "last_analysis_results", {}) or {}
+                except Exception as e:
+                    # إذا لم يتوفر /urls/{id}، نستخدم ما لدينا من analysis.results (قد يكون فارغًا)
+                    st.write(f"Info: /urls/{{id}} not available or error: {e}")
 
-            tables.append({
-                "engine": engine,
-                "Category": category,
-                "status": status
-            })
+            # الآن استخرج النتائج إن وُجدت
+            for engine, details in (vt_results.items() if isinstance(vt_results, dict) else []):
+                # details قد يكون dict أو كائن؛ نحاول الوصول بطريقة آمنة
+                try:
+                    category = details.get('category', '') if isinstance(details, dict) else getattr(details, 'category', '')
+                    category = (category or "").lower()
+                except Exception:
+                    category = ""
 
-        # عرض النتيجة
-        if is_dangerous:
-            st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
-        else:
-            st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
+                is_engine_dangerous = any(word in category for word in danger_words)
+                status = "dangerous" if is_engine_dangerous else "safe"
+                if is_engine_dangerous:
+                    is_dangerous = True
 
-        st.table(tables)
-        return ("Dangerous" if is_dangerous else "Safe"), tables
+                tables.append({
+                    "engine": engine,
+                    "Category": category,
+                    "status": status
+                })
+
+            # عرض النتيجة
+            if is_dangerous:
+                st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
+            elif tables:
+                st.markdown("<h4 style='color: green;'>✔ Safe (no engines flagged)</h4>", unsafe_allow_html=True)
+            else:
+                st.info("No detailed engine results available yet. Try again after a short while.")
+
+            if tables:
+                st.table(tables)
+
+            return ("Dangerous" if is_dangerous else "Safe"), tables
 
     except Exception as e:
-        st.write(e)
+        st.error(f"VirusTotal error: {e}")
+        return "Error", []
 
 # ----------------------------- واجهة فحص URL -----------------------------
 with tab1:
@@ -197,34 +218,36 @@ with tab2:
             st.error(f"❌ The file is too big. Maximum allowed size is {max_file} MB")
         else:
             if st.button("Start File Scanning"):
-                with vt.Client(API_KEY_virustotal) as client:
-                    analysis = client.scan_file(uploaded_file, wait_for_completion=True)
+                try:
+                    with vt.Client(API_KEY_virustotal) as client:
+                        analysis = client.scan_file(uploaded_file, wait_for_completion=True)
 
-                stats = analysis.stats
-                malicious = stats.get("malicious", 0)
-                suspicious = stats.get("suspicious", 0)
-                undetected = stats.get("undetected", 0)
-                harmless = stats.get("harmless", 0)
+                    stats = analysis.stats
+                    malicious = stats.get("malicious", 0)
+                    suspicious = stats.get("suspicious", 0)
+                    undetected = stats.get("undetected", 0)
+                    harmless = stats.get("harmless", 0)
 
-                if malicious > 0:
-                    st.error("⚠ It's a malicious file")
-                    status_file = "Malicious"
-                elif suspicious > 0:
-                    st.warning("⚠ It's a suspicious file")
-                    status_file = "Suspicious"
-                elif undetected > 0 and harmless > 0:
-                    st.success("✔ It is safe")
-                    status_file = "Safe"
-                else:
-                    st.info("ℹ File unknown, likely safe")
-                    status_file = "Unknown"
+                    if malicious > 0:
+                        st.error("⚠ It's a malicious file")
+                        status_file = "Malicious"
+                    elif suspicious > 0:
+                        st.warning("⚠ It's a suspicious file")
+                        status_file = "Suspicious"
+                    elif undetected > 0 and harmless > 0:
+                        st.success("✔ It is safe")
+                        status_file = "Safe"
+                    else:
+                        st.info("ℹ File unknown, likely safe")
+                        status_file = "Unknown"
 
-                file_name = create_pdf(uploaded_file.name, status_file)
-                with open(file_name, "rb") as f:
-                    st.download_button(
-                        label="Download PDF Report",
-                        data=f,
-                        file_name=file_name,
-                        mime="application/pdf"
-                    )
-
+                    file_name = create_pdf(uploaded_file.name, status_file)
+                    with open(file_name, "rb") as f:
+                        st.download_button(
+                            label="Download PDF Report",
+                            data=f,
+                            file_name=file_name,
+                            mime="application/pdf"
+                        )
+                except Exception as e:
+                    st.error(f"File scan error: {e}")
