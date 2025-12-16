@@ -84,10 +84,11 @@ with tab1:
             if is_dangerous:
                 st.error("⚠ Dangerous")
                 st.table(tables)
-                st.write(results)
                 return "dangerous"
             else:
                 st.success("✔ Safe")
+                st.write(results)
+
                 st.table(tables)
                 return "safe"
 
@@ -153,6 +154,7 @@ with tab2:
                     st.info("ℹ No engine flagged it. The file is unknown but likely non-malicious ")
         elif size > max_file:
             st.error(f"❌ The file is too big. Maximum allowed size is {max_file} MB")
+
 
 
 
