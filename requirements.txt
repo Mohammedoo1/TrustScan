@@ -1,4 +1,6 @@
 vt-py
 requests
 streamlit
+fpdf
+datetime
 
