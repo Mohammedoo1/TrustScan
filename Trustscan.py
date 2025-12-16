@@ -45,31 +45,49 @@ def create_pdf(url, status, tables=None):
     return file_name
 
 # ----------------------------- فحص Google Safe Browsing -----------------------------
-def scan_g(URL):
+def scan_vt(URL):
+    client = vt.Client(API_KEY_virustotal)
+    tables = []
+    is_dangerous = False
+
     try:
-        data = {
-            "threatInfo": {
-                "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING"],
-                "platformTypes": ["ANY_PLATFORM"],
-                "threatEntryTypes": ["URL"],
-                "threatEntries": [{"url": URL}]
-            }
-        }
-        with st.spinner("Scanning Google Safe Browsing..."):
-            response = rq.post(
-                f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={API_KEY_google}",
-                json=data
-            )
-        result = response.json()
-        if "matches" in result:
+        with st.spinner("Scanning VirusTotal..."):
+            analysis = client.scan_url(URL, wait_for_completion=True)
+
+            # ننتظر اكتمال التحليل
+            while True:
+                result = client.get_object(f"/analyses/{analysis.id}")
+                if result.status == "completed":
+                    break
+
+        # الآن نستخدم نتيجة التحليل نفسها
+        vt_results = result.results
+
+        for engine, details in vt_results.items():
+            category = details['category'].lower()
+            is_engine_dangerous = any(word in category for word in danger_words)
+            status = "dangerous" if is_engine_dangerous else "safe"
+
+            if is_engine_dangerous:
+                is_dangerous = True
+
+            tables.append({
+                "engine": engine,
+                "Category": category,
+                "status": status
+            })
+
+        # عرض النتيجة
+        if is_dangerous:
             st.markdown("<h4 style='color: red;'>⚠ Dangerous</h4>", unsafe_allow_html=True)
-            return "Dangerous"
         else:
             st.markdown("<h4 style='color: green;'>✔ Safe</h4>", unsafe_allow_html=True)
-            return "Safe"
+
+        st.table(tables)
+        return ("Dangerous" if is_dangerous else "Safe"), tables
+
     except Exception as e:
         st.write(e)
-
 # ----------------------------- فحص VirusTotal (الإصدار المحسّن) -----------------------------
 def scan_vt(URL):
     client = vt.Client(API_KEY_virustotal)
@@ -209,3 +227,4 @@ with tab2:
                         file_name=file_name,
                         mime="application/pdf"
                     )
+
