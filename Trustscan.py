@@ -120,10 +120,14 @@ with tab1:
 
         status_g = status_v = None
         tables = None
+        if "vt_tables" not in st.session_state:
+           st.session_state.vt_tables = []
 
         if choose == "🛡️ VirusTotal Scan":
-            status_v, tables = scan_vt(URL)
-            file_name = create_pdf(URL, status_v, tables=tables)
+           status_v, st.session_state.vt_tables = scan_vt(URL)
+           st.table(st.session_state.vt_tables)
+           file_name = create_pdf(URL, status_v, tables=st.session_state.vt_tables)
+
 
         elif choose == "🔍 Google Safe Browsing Scan":
             status_g = scan_g(URL)
@@ -192,3 +196,4 @@ with tab2:
                         file_name=file_name,
                         mime="application/pdf"
                     )
+
