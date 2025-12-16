@@ -120,7 +120,6 @@ with tab1:
             st.stop()
 
         status_g = status_v = None
-        tables = None
 
         if choose == "🛡️ VirusTotal Scan":
             status_v, tables = scan_vt(URL)
@@ -189,6 +188,7 @@ with tab2:
                         file_name=file_name,
                         mime="application/pdf"
                     )
+
 
 
 
