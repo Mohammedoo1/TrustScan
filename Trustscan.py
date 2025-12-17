@@ -56,12 +56,7 @@ def scan_vt(URL):
     is_dangerous = False
     try:
         with vt.Client(API_KEY_virustotal) as client:
-            # محاولة جلب تقرير موجود مسبقًا
-            try:
-                url_obj = client.get_url_report(URL)
-            except:
-                # إذا لا يوجد تقرير مسبق، نعمل فحص جديد
-                url_obj = client.scan_url(URL, wait_for_completion=True)
+            
             try:
                 url_obj = client.get_url_report(URL)
             except:
@@ -185,4 +180,5 @@ with tab2:
 
                 except Exception as e:
                     st.error(f"File scan failed: {e}")
+
 
