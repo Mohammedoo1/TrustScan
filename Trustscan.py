@@ -138,12 +138,13 @@ def scan_vt(URL):
                     "status": "safe"
                 })
 
-            st.table(tables)
 
             if is_dangerous:
                 st.error("⚠ Dangerous (VirusTotal engines)")
             else:
                 st.success("✔ Safe (VirusTotal engines)")
+                
+            st.table(tables)
 
             return "Dangerous" if is_dangerous else "Safe", tables
 
@@ -304,12 +305,13 @@ with tab2:
                     })
 
                 # عرض الجدول في الواجهة
-                st.table(tables)
 
                 if is_dangerous:
                     st.error("⚠ Dangerous file detected")
                 else:
                     st.success("✔ File seems safe")
+                    
+                st.table(tables)
 
                 # ---------------- PDF (منظم بدون تداخل) ----------------
                 pdf_bytes = generate_pdf(
@@ -328,3 +330,4 @@ with tab2:
 
             except Exception as e:
                 st.error(f"File scan failed: {e}")
+
