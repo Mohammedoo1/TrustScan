@@ -154,7 +154,7 @@ def scan_vt(URL):
 
 # ----------------------------- تبويب URL -----------------------------
 with tab1:
-    st.title("Scan URL")
+    st.title("Scan URL 🌐")
     URL = st.text_input("Enter your URL:")
 
     choose = st.radio(
@@ -249,7 +249,7 @@ with tab1:
 
 # ----------------------------- تبويب الملفات (معدل فقط) -----------------------------
 with tab2:
-    st.title("Scan Your File")
+    st.title("Scan File 📁")
     max_file = 30  # MB
     uploaded_file = st.file_uploader("Choose your file:", type=None)
 
@@ -330,4 +330,5 @@ with tab2:
 
             except Exception as e:
                 st.error(f"File scan failed: {e}")
+
 
