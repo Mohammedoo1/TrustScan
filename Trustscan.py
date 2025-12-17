@@ -62,6 +62,12 @@ def scan_vt(URL):
             except:
                 # إذا لا يوجد تقرير مسبق، نعمل فحص جديد
                 url_obj = client.scan_url(URL, wait_for_completion=True)
+            try:
+                url_obj = client.get_url_report(URL)
+            except:
+                with st.spinner("🛡️ VirusTotal is scanning the URL..."):
+                     url_obj = client.scan_url(URL, wait_for_completion=True)
+
 
             # استخراج نتائج المحركات
             if hasattr(url_obj, 'last_analysis_results'):
@@ -179,3 +185,4 @@ with tab2:
 
                 except Exception as e:
                     st.error(f"File scan failed: {e}")
+
