@@ -1,6 +1,9 @@
+import time
+from datetime import datetime
 import streamlit as st
 import vt
 import requests as rq
+from fpdf import FPDF
 
 # ----------------------------- إعداد الصفحة -----------------------------
 st.set_page_config(
@@ -20,6 +23,53 @@ danger_words = [
     "harmful", "suspicious", "spam", "dangerous"
 ]
 
+# ----------------------------- دالة توليد PDF -----------------------------
+def generate_pdf(target, scan_type, final_status, table_data):
+    """
+    تولد PDF في الذاكرة ثم تعيده بايتس جاهزة للتحميل.
+    target: URL أو اسم الملف
+    scan_type: "URL Scan" أو "File Scan" أو "Google Scan"
+    final_status: "Safe" / "Dangerous" / "Error"
+    table_data: قائمة صفوف تحتوي على مفاتيح: engine, Category, status
+    """
+    pdf = FPDF()
+    pdf.add_page()
+
+    # عنوان
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Trust Scan Report", ln=True, align="C")
+    pdf.ln(4)
+
+    # معلومات عامة
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 8, f"Type: {scan_type}", ln=True)
+    pdf.cell(0, 8, f"Target: {target}", ln=True)
+    pdf.cell(0, 8, f"Final status: {final_status}", ln=True)
+    pdf.cell(0, 8, f"Scan time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
+    pdf.ln(6)
+
+    # جدول النتائج
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(70, 8, "Engine", 1)
+    pdf.cell(80, 8, "Category", 1)
+    pdf.cell(30, 8, "Status", 1, ln=True)
+
+    pdf.set_font("Arial", size=11)
+    if not table_data:
+        pdf.cell(180, 8, "No detailed results available.", 1, ln=True)
+    else:
+        for row in table_data:
+            engine = str(row.get("engine", ""))[:40]
+            category = str(row.get("Category", ""))[:60]
+            status = str(row.get("status", ""))
+            pdf.cell(70, 8, engine, 1)
+            pdf.cell(80, 8, category, 1)
+            pdf.cell(30, 8, status, 1, ln=True)
+
+    # تحويل لسلسلة بايتات (latin-1 لتجنب مشاكل الحروف من FPDF)
+    pdf_bytes = pdf.output(dest="S").encode("latin-1")
+    return pdf_bytes
+
 # ----------------------------- وظائف الفحص -----------------------------
 def scan_g(URL):
     """فحص سريع باستخدام Google Safe Browsing API"""
@@ -35,7 +85,8 @@ def scan_g(URL):
         with st.spinner("Scanning Google Safe Browsing..."):
             response = rq.post(
                 f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={API_KEY_google}",
-                json=data
+                json=data,
+                timeout=20
             )
         result = response.json()
         if "matches" in result:
@@ -54,25 +105,25 @@ def scan_vt(URL):
     is_dangerous = False
     try:
         with vt.Client(API_KEY_virustotal) as client:
-            
             try:
+                # حاول الحصول على تقرير موجود مسبقًا
                 url_obj = client.get_url_report(URL)
-            except:
+            except Exception:
+                # وإلا شغّل فحص جديد مع مؤشِّر انتظار
                 with st.spinner("🛡️ VirusTotal is scanning the URL..."):
-                     url_obj = client.scan_url(URL, wait_for_completion=True)
+                    url_obj = client.scan_url(URL, wait_for_completion=True)
 
-
-            # استخراج نتائج المحركات
-            if hasattr(url_obj, 'last_analysis_results'):
+            # استخراج نتائج المحركات (يتوافق مع إصدارات vt مختلفة)
+            if hasattr(url_obj, "last_analysis_results"):
                 results_dict = url_obj.last_analysis_results
-            elif hasattr(url_obj, 'results'):
+            elif hasattr(url_obj, "results"):
                 results_dict = url_obj.results
             else:
                 results_dict = {}
 
             for engine, details in results_dict.items():
                 try:
-                    category = details.get('category', 'undetected').lower()
+                    category = details.get("category", "undetected").lower()
                 except Exception:
                     category = str(details).lower()
 
@@ -81,7 +132,6 @@ def scan_vt(URL):
                     is_dangerous = True
                 tables.append({"engine": engine, "Category": category, "status": status})
 
-            # إذا لا توجد نتائج، نضيف صف ملخص مثل البرنامج الأول
             if not tables:
                 tables.append({
                     "engine": "VirusTotal summary",
@@ -89,7 +139,6 @@ def scan_vt(URL):
                     "status": "safe"
                 })
 
-            # عرض الجدول
             st.table(tables)
 
             if is_dangerous:
@@ -122,6 +171,7 @@ with tab1:
             st.stop()
 
         status_g = status_v = None
+        tables = []
 
         if choose == "🛡️ VirusTotal Scan":
             status_v, tables = scan_vt(URL)
@@ -140,6 +190,31 @@ with tab1:
             if status_g != status_v and status_g != "Error" and status_v != "Error":
                 st.warning("⚠ Maybe it is risky, don't open it")
 
+        # إعداد بيانات PDF للتحميل
+        # إذا توجد نتائج VirusTotal استخدمها، وإلا أنشئ صف من Google فقط
+        if tables:
+            pdf_bytes = generate_pdf(URL, "URL Scan (VirusTotal)", status_v, tables)
+            st.download_button(
+                label="📄 Download PDF report",
+                data=pdf_bytes,
+                file_name=f"trustscan_url_{int(time.time())}.pdf",
+                mime="application/pdf"
+            )
+        elif status_g:
+            # لا توجد نتائج محركات لكن عندنا نتيجة من Google
+            table_google = [{
+                "engine": "Google Safe Browsing",
+                "Category": status_g,
+                "status": status_g.lower()
+            }]
+            pdf_bytes = generate_pdf(URL, "URL Scan (Google Safe Browsing)", status_g, table_google)
+            st.download_button(
+                label="📄 Download PDF report (Google)",
+                data=pdf_bytes,
+                file_name=f"trustscan_google_{int(time.time())}.pdf",
+                mime="application/pdf"
+            )
+
 # ----------------------------- تبويب الملفات -----------------------------
 with tab2:
     st.title("Scan Your File")
@@ -154,7 +229,8 @@ with tab2:
             if st.button("Start File Scanning"):
                 try:
                     with vt.Client(API_KEY_virustotal) as client:
-                        analysis = client.scan_file(uploaded_file, wait_for_completion=True)
+                        with st.spinner("🛡️ VirusTotal is scanning the file..."):
+                            analysis = client.scan_file(uploaded_file, wait_for_completion=True)
 
                     stats = getattr(analysis, "stats", {}) or {}
                     malicious = stats.get("malicious", 0)
@@ -176,8 +252,14 @@ with tab2:
                     else:
                         st.success("✔ It seems safe")
 
+                    # زر تنزيل PDF لنتيجة الفحص
+                    pdf_bytes = generate_pdf(uploaded_file.name, "File Scan", tables[0]["status"], tables)
+                    st.download_button(
+                        label="📄 Download PDF report",
+                        data=pdf_bytes,
+                        file_name=f"trustscan_file_{int(time.time())}.pdf",
+                        mime="application/pdf"
+                    )
+
                 except Exception as e:
                     st.error(f"File scan failed: {e}")
-
-
-
