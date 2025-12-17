@@ -4,7 +4,6 @@ import vt
 import requests as rq
 from fpdf import FPDF
 
-# ----------------------------- إعداد الصفحة -----------------------------
 st.set_page_config(
     page_title="Trust Scan",
     page_icon="🛡️",
@@ -16,25 +15,16 @@ tab1, tab2 = st.tabs(["Scan URL", "Scan File"])
 API_KEY_google = st.secrets["API_google"]
 API_KEY_virustotal = st.secrets["API_virus_total"]
 
-# كلمات الخطر لتصنيف ناتج كل محرك
 danger_words = [
     "malicious", "phishing", "malware", "trojan",
     "harmful", "suspicious", "spam", "dangerous"
 ]
 
-# ----------------------------- دالة توليد PDF -----------------------------
 def generate_pdf(target, scan_type, final_status, table_data):
-    """
-    تولد PDF في الذاكرة ثم تعيده بايتس جاهزة للتحميل.
-    target: URL أو اسم الملف
-    scan_type: نص يصف نوع الفحص (مثال: "URL Scan (Google + VirusTotal)")
-    final_status: "Safe" / "Dangerous" / "Error"
-    table_data: قائمة صفوف تحتوي على مفاتيح: engine, Category, status
-    """
+  
     pdf = FPDF()
     pdf.add_page()
 
-    # عنوان
     pdf.set_font("Arial", "B", 16)
     pdf.cell(0, 10, "Trust Scan Report", ln=True, align="C")
     pdf.ln(4)
@@ -330,5 +320,6 @@ with tab2:
 
             except Exception as e:
                 st.error(f"File scan failed: {e}")
+
 
 
