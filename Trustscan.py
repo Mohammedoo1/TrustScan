@@ -1,8 +1,6 @@
-import time
 import streamlit as st
 import vt
 import requests as rq
-from datetime import datetime
 
 # ----------------------------- إعداد الصفحة -----------------------------
 st.set_page_config(
@@ -180,5 +178,6 @@ with tab2:
 
                 except Exception as e:
                     st.error(f"File scan failed: {e}")
+
 
 
