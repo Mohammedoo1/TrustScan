@@ -16,6 +16,7 @@ It uses **Google Safe Browsing** and **VirusTotal** to detect malware, phishing,
   - Suspicious  
   - Malicious  
 - Simple and clean Streamlit interface.
+- Download detailed PDF reports for both URL scans and file scans.
 
 ---
 🛠️ Installation
@@ -55,6 +56,8 @@ To run TrustScan on your local machine:
 Open a terminal inside the project folder.
 
 Make sure you have added your API keys (see instructions above).
+
+After scanning a URL or a file, you can download a PDF report summarizing the scan results by clicking the "Download PDF report" button.
 
 
 Run the following command:
