@@ -29,7 +29,7 @@ def generate_pdf(target, scan_type, final_status, table_data):
     pdf.cell(0, 10, "Trust Scan Report", ln=True, align="C")
     pdf.ln(4)
 
-    # معلومات عامة
+    
     pdf.set_font("Arial", size=12)
     pdf.cell(0, 8, f"Type: {scan_type}", ln=True)
     pdf.cell(0, 8, f"Target: {target}", ln=True)
@@ -37,7 +37,7 @@ def generate_pdf(target, scan_type, final_status, table_data):
     pdf.cell(0, 8, f"Scan time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
     pdf.ln(6)
 
-    # جدول النتائج
+    
     pdf.set_font("Arial", "B", 12)
     pdf.cell(70, 8, "Engine", 1)
     pdf.cell(80, 8, "Category", 1)
@@ -55,13 +55,13 @@ def generate_pdf(target, scan_type, final_status, table_data):
             pdf.cell(80, 8, category, 1)
             pdf.cell(30, 8, status, 1, ln=True)
 
-    # تحويل لسلسلة بايتات (latin-1 لتجنب مشاكل الحروف من FPDF)
+    
     pdf_bytes = pdf.output(dest="S").encode("latin-1")
     return pdf_bytes
 
-# ----------------------------- وظائف الفحص -----------------------------
+
 def scan_g(URL):
-    """فحص سريع باستخدام Google Safe Browsing API"""
+    
     try:
         data = {
             "threatInfo": {
@@ -89,20 +89,18 @@ def scan_g(URL):
         return "Error"
 
 def scan_vt(URL):
-    """فحص URL باستخدام VirusTotal"""
     tables = []
     is_dangerous = False
     try:
         with vt.Client(API_KEY_virustotal) as client:
             try:
-                # حاول الحصول على تقرير موجود مسبقًا
                 url_obj = client.get_url_report(URL)
             except Exception:
-                # وإلا شغّل فحص جديد مع مؤشر انتظار
+                
                 with st.spinner("🛡️ VirusTotal is scanning the URL..."):
                     url_obj = client.scan_url(URL, wait_for_completion=True)
 
-            # استخراج نتائج المحركات (يتوافق مع إصدارات vt مختلفة)
+            
             if hasattr(url_obj, "last_analysis_results"):
                 results_dict = url_obj.last_analysis_results
             elif hasattr(url_obj, "results"):
@@ -142,7 +140,7 @@ def scan_vt(URL):
         st.error(f"VirusTotal scan failed: {e}")
         return "Error", tables
 
-# ----------------------------- تبويب URL -----------------------------
+
 with tab1:
     st.title("Scan URL 🌐")
     URL = st.text_input("Enter your URL:")
@@ -163,7 +161,7 @@ with tab1:
         status_g = status_v = None
         tables = []
 
-        # تنفيذ الفحص حسب اختيار المستخدم
+        
         if choose == "🛡️ VirusTotal Scan":
             status_v, tables = scan_vt(URL)
 
@@ -181,7 +179,7 @@ with tab1:
             if status_g != status_v and status_g != "Error" and status_v != "Error":
                 st.warning("⚠ Maybe it is risky, don't open it")
 
-        # ---------------- إعداد بيانات PDF للتحميل (يدعم Google + VirusTotal) ----------------
+    
         pdf_tables = []
         final_status = "Safe"
         scan_type = ""
@@ -201,28 +199,27 @@ with tab1:
             scan_type = "URL Scan (Google Safe Browsing)"
 
         elif choose == "Both (Deep Scan)":
-            # نضع نتيجة Google أولًا ثم نلحق نتائج VirusTotal
+    
             pdf_tables = [{
                 "engine": "Google Safe Browsing",
                 "Category": status_g,
                 "status": (status_g or "error").lower()
             }]
-            # أضف نتائج VirusTotal إن وُجدت
             if tables:
                 pdf_tables += tables
 
-            # التجميعة النهائية: لو أي واحد قال Dangerous -> نعتبر النهائي Dangerous
+            
             if status_g == "Dangerous" or status_v == "Dangerous":
                 final_status = "Dangerous"
             elif status_g == "Error" or status_v == "Error":
-                # إذا أي فحص رجع خطأ نضع Error ما لم يكن هناك نتيجة Dangerous
+                
                 final_status = "Error"
             else:
                 final_status = "Safe"
 
             scan_type = "URL Scan (Google + VirusTotal)"
 
-        # زر تنزيل PDF
+        
         if pdf_tables:
             pdf_bytes = generate_pdf(
                 URL,
@@ -237,10 +234,9 @@ with tab1:
                 mime="application/pdf"
             )
 
-# ----------------------------- تبويب الملفات (معدل فقط) -----------------------------
 with tab2:
     st.title("Scan File 📁")
-    max_file = 30  # MB
+    max_file = 30  
     uploaded_file = st.file_uploader("Choose your file:", type=None)
 
     if uploaded_file:
@@ -262,7 +258,6 @@ with tab2:
                             wait_for_completion=True
                         )
 
-                # 🟢 استخراج نتائج كل محرك (تفصيلي مثل URL)
                 results = getattr(analysis, "results", {})
 
                 for engine, details in results.items():
@@ -286,7 +281,7 @@ with tab2:
                         "status": status
                     })
 
-                # في حال لم ترجع محركات
+                
                 if not tables:
                     tables.append({
                         "engine": "VirusTotal",
@@ -294,7 +289,7 @@ with tab2:
                         "status": "safe"
                     })
 
-                # عرض الجدول في الواجهة
+            
 
                 if is_dangerous:
                     st.error("⚠ Dangerous file detected")
@@ -303,7 +298,7 @@ with tab2:
                     
                 st.table(tables)
 
-                # ---------------- PDF (منظم بدون تداخل) ----------------
+                
                 pdf_bytes = generate_pdf(
                     uploaded_file.name,
                     "File Scan (VirusTotal)",
@@ -320,6 +315,7 @@ with tab2:
 
             except Exception as e:
                 st.error(f"File scan failed: {e}")
+
 
 
 
