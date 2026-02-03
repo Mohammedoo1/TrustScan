@@ -6,7 +6,7 @@ from fpdf import FPDF
 
 st.set_page_config(
     page_title="Trust Scan",
-    page_icon="trustscan.png",
+    page_icon="Trustscan.png",
     layout="wide"
 )
 
@@ -315,6 +315,7 @@ with tab2:
 
             except Exception as e:
                 st.error(f"File scan failed: {e}")
+
 
 
 
